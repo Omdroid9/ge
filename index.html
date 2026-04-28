@@ -1,847 +1,1041 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Vibe Check</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-<script>emailjs.init("gfpWpSD5k3Glzm5uI");</script>
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --ink: #1a1814;
-    --paper: #f5f0e8;
-    --cream: #ede7d5;
-    --accent: #c84b2f;
-    --accent2: #2d6a4f;
-    --muted: #7a7368;
-    --card-bg: #faf7f2;
-    --border: #d4cfc4;
-    --gold: #b8860b;
-  }
-
-  html { font-size: 16px; scroll-behavior: smooth; }
-
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'DM Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-    cursor: crosshair;
-  }
-
-  /* NOISE TEXTURE */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.5;
-  }
-
-  /* ===== LANDING ===== */
-  #landing {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
-    position: relative;
-  }
-
-  .badge {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    border: 1px solid var(--accent);
-    padding: 4px 12px;
-    margin-bottom: 2rem;
-    display: inline-block;
-  }
-
-  h1.title {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(3rem, 10vw, 7rem);
-    font-weight: 800;
-    line-height: 0.9;
-    letter-spacing: -0.03em;
-    text-align: center;
-    margin-bottom: 1.5rem;
-  }
-
-  h1.title .italic-line {
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-weight: 400;
-    color: var(--accent);
-  }
-
-  .subtitle {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--muted);
-    text-align: center;
-    max-width: 380px;
-    line-height: 1.8;
-    margin-bottom: 3rem;
-  }
-
-  .start-btn {
-    font-family: 'Syne', sans-serif;
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    padding: 16px 48px;
-    cursor: pointer;
-    transition: transform 0.15s, background 0.15s;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .start-btn::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--accent);
-  }
-
-  .start-btn:hover {
-    background: var(--accent);
-    transform: translateY(-2px);
-  }
-
-  .corner-decor {
-    position: absolute;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--border);
-    letter-spacing: 0.1em;
-  }
-  .corner-decor.tl { top: 2rem; left: 2rem; }
-  .corner-decor.tr { top: 2rem; right: 2rem; text-align: right; }
-  .corner-decor.bl { bottom: 2rem; left: 2rem; }
-  .corner-decor.br { bottom: 2rem; right: 2rem; text-align: right; }
-
-  .score-line {
-    margin-top: 2rem;
-    font-size: 0.7rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-
-  /* ===== GAME CONTAINER ===== */
-  #game-container {
-    display: none;
-    min-height: 100vh;
-  }
-
-  /* ===== PROGRESS BAR ===== */
-  #progress-bar-wrap {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: var(--border);
-    z-index: 100;
-  }
-  #progress-bar-fill {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 0.4s ease;
-  }
-
-  #progress-label {
-    position: fixed;
-    top: 12px;
-    right: 20px;
-    font-size: 0.65rem;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    z-index: 100;
-  }
-
-  /* ===== GAME TYPES ===== */
-
-  /* EITHER OR */
-  .round-wrap {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 5rem 2rem 3rem;
-    animation: fadeSlide 0.4s ease;
-  }
-
-  @keyframes fadeSlide {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .round-type-badge {
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1.5rem;
-  }
-
-  .question-text {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(1.5rem, 4vw, 2.5rem);
-    text-align: center;
-    max-width: 640px;
-    line-height: 1.3;
-    margin-bottom: 3rem;
-    color: var(--ink);
-  }
-
-  /* Either/Or Split */
-  .split-options {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    gap: 0;
-    max-width: 700px;
-    width: 100%;
-    align-items: stretch;
-  }
-
-  .split-opt {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 2.5rem 2rem;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s;
-    position: relative;
-  }
-
-  .split-opt:first-child {
-    border-right: none;
-  }
-
-  .split-opt:last-child {
-    border-left: none;
-  }
-
-  .split-opt:hover {
-    background: var(--ink);
-    color: var(--paper);
-    z-index: 2;
-  }
-
-  .split-opt .opt-label {
-    font-family: 'Syne', sans-serif;
-    font-size: 1.3rem;
-    font-weight: 700;
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-
-  .split-opt .opt-sub {
-    font-size: 0.75rem;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-  }
-
-  .split-opt:hover .opt-sub { color: var(--border); }
-
-  .or-divider {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 48px;
-    background: var(--ink);
-    color: var(--paper);
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    border: 1px solid var(--border);
-  }
-
-  /* RANKING */
-  .rank-items {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    max-width: 480px;
-    width: 100%;
-    user-select: none;
-  }
-
-  .rank-item {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-bottom: none;
-    padding: 1rem 1.25rem;
-    transition: background 0.2s, transform 0.15s;
-    position: relative;
-    touch-action: manipulation;
-  }
-
-  .rank-item:last-child { border-bottom: 1px solid var(--border); }
-  .rank-item.moving { background: var(--cream); transform: scale(1.02); z-index: 2; }
-
-  .rank-arrows {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-left: auto;
-  }
-
-  .rank-arrow {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    width: 28px;
-    height: 24px;
-    font-size: 0.75rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.1s, color 0.1s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .rank-arrow:active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-
-  .rank-num {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 1.2rem;
-    color: var(--accent);
-    min-width: 24px;
-    text-align: center;
-  }
-
-  .rank-name {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
-    flex: 1;
-  }
-
-  .rank-handle { display: none; }
-
-  /* SCENARIO */
-  .scenario-box {
-    max-width: 560px;
-    width: 100%;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    position: relative;
-  }
-
-  .scenario-box::before {
-    content: '"';
-    font-family: 'Instrument Serif', serif;
-    font-size: 4rem;
-    color: var(--border);
-    position: absolute;
-    top: -1rem;
-    left: 1.5rem;
-    line-height: 1;
-  }
-
-  .scenario-text {
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: var(--ink);
-  }
-
-  .scenario-choices {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    max-width: 560px;
-    width: 100%;
-  }
-
-  .scenario-choice {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-top: none;
-    padding: 1rem 1.5rem;
-    cursor: pointer;
-    text-align: left;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--ink);
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .scenario-choice:first-of-type { border-top: 1px solid var(--border); }
-  .scenario-choice:hover { background: var(--ink); color: var(--paper); }
-
-  .choice-letter {
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    color: var(--accent);
-    min-width: 20px;
-  }
-
-  .scenario-choice:hover .choice-letter { color: var(--cream); }
-
-  /* OPEN ENDED */
-  .open-input {
-    max-width: 560px;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .open-input textarea {
-    width: 100%;
-    height: 140px;
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    padding: 1.25rem;
-    font-family: 'Instrument Serif', serif;
-    font-style: italic;
-    font-size: 1rem;
-    color: var(--ink);
-    resize: none;
-    outline: none;
-    transition: border-color 0.15s;
-  }
-
-  .open-input textarea:focus { border-color: var(--ink); }
-  .open-input textarea::placeholder { color: var(--muted); }
-
-  .open-submit {
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    padding: 14px 2rem;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background 0.15s;
-    text-align: right;
-  }
-
-  .open-submit:hover { background: var(--accent); }
-
-  /* ===== RESULTS ===== */
-  #results {
-    display: none;
-    min-height: 100vh;
-    padding: 5rem 2rem 3rem;
-    max-width: 760px;
-    margin: 0 auto;
-    animation: fadeSlide 0.5s ease;
-  }
-
-  .result-header {
-    border-bottom: 2px solid var(--ink);
-    padding-bottom: 1.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .result-header .eyebrow {
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 0.75rem;
-  }
-
-  .result-header h2 {
-    font-family: 'Syne', sans-serif;
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    font-weight: 800;
-    line-height: 1;
-  }
-
-  .profile-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-    margin-bottom: 3rem;
-  }
-
-  .profile-cell {
-    background: var(--card-bg);
-    padding: 1.5rem;
-  }
-
-  .profile-cell .label {
-    font-size: 0.65rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 0.5rem;
-  }
-
-  .profile-cell .value {
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.1rem;
-    color: var(--ink);
-  }
-
-  .profile-cell .value.accent { color: var(--accent); }
-
-  .answers-section h3 {
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .answer-row {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 1rem;
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border);
-    align-items: start;
-  }
-
-  .answer-q {
-    font-size: 0.75rem;
-    color: var(--muted);
-    line-height: 1.5;
-  }
-
-  .answer-a {
-    font-family: 'Instrument Serif', serif;
-    font-size: 0.95rem;
-    color: var(--ink);
-    line-height: 1.5;
-  }
-
-  .restart-btn {
-    margin-top: 3rem;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 12px 2rem;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-
-  .restart-btn:hover { border-color: var(--ink); color: var(--ink); }
-
-  /* CONTINUE BTN */
-  .continue-btn {
-    margin-top: 2.5rem;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    background: none;
-    border: none;
-    color: var(--muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: color 0.15s;
-    padding: 0;
-  }
-
-  .continue-btn:hover { color: var(--ink); }
-  .continue-btn::after { content: '→'; font-size: 1rem; }
-
-  /* Ranking confirm */
-  .rank-confirm-btn {
-    margin-top: 1.5rem;
-    font-family: 'Syne', sans-serif;
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    background: var(--ink);
-    color: var(--paper);
-    border: none;
-    padding: 12px 2rem;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-
-  .rank-confirm-btn:hover { background: var(--accent2); }
-
-  /* Vibe meter */
-  .vibe-meters {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 3rem;
-  }
-
-  .meter-row {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-
-  .meter-label {
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    min-width: 120px;
-  }
-
-  .meter-bar {
-    flex: 1;
-    height: 6px;
-    background: var(--border);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .meter-fill {
-    height: 100%;
-    background: var(--accent);
-    width: 0%;
-    transition: width 1s ease 0.5s;
-  }
-
-  .meter-val {
-    font-size: 0.7rem;
-    color: var(--muted);
-    min-width: 30px;
-    text-align: right;
-  }
-
-  @media (max-width: 600px) {
-    .split-options { grid-template-columns: 1fr; }
-    .or-divider { width: 100%; height: 40px; }
-    .split-opt:first-child { border-right: 1px solid var(--border); border-bottom: none; }
-    .split-opt:last-child { border-left: 1px solid var(--border); border-top: none; }
-    .profile-grid { grid-template-columns: 1fr; }
-    .answer-row { grid-template-columns: 1fr; }
-    .corner-decor { display: none; }
-    .round-wrap { padding: 5rem 1.25rem 2rem; }
-    .question-text { font-size: 1.3rem; margin-bottom: 2rem; }
-    .split-opt { padding: 2rem 1.25rem; }
-    .scenario-box { padding: 1.5rem 1.25rem; }
-    .scenario-choice { padding: 1rem; }
-    h1.title { font-size: clamp(2.5rem, 14vw, 5rem); }
-    .rank-items { max-width: 100%; }
-    .open-input textarea { font-size: 1rem; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Vibe Check</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script>
+    emailjs.init("gfpWpSD5k3Glzm5uI");
+  </script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --ink: #1a1814;
+      --paper: #f5f0e8;
+      --cream: #ede7d5;
+      --accent: #c84b2f;
+      --accent2: #2d6a4f;
+      --muted: #7a7368;
+      --card-bg: #faf7f2;
+      --border: #d4cfc4;
+      --gold: #b8860b;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* NOISE TEXTURE */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.5;
+    }
+
+    /* ===== LANDING ===== */
+    #landing {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .badge {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 4px 12px;
+      margin-bottom: 2rem;
+      display: inline-block;
+    }
+
+    h1.title {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(3rem, 10vw, 7rem);
+      font-weight: 800;
+      line-height: 0.9;
+      letter-spacing: -0.03em;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    h1.title .italic-line {
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-weight: 400;
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 380px;
+      line-height: 1.8;
+      margin-bottom: 3rem;
+    }
+
+    .start-btn {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      padding: 16px 48px;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .start-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .start-btn:hover {
+      background: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .corner-decor {
+      position: absolute;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--border);
+      letter-spacing: 0.1em;
+    }
+
+    .corner-decor.tl {
+      top: 2rem;
+      left: 2rem;
+    }
+
+    .corner-decor.tr {
+      top: 2rem;
+      right: 2rem;
+      text-align: right;
+    }
+
+    .corner-decor.bl {
+      bottom: 2rem;
+      left: 2rem;
+    }
+
+    .corner-decor.br {
+      bottom: 2rem;
+      right: 2rem;
+      text-align: right;
+    }
+
+    .score-line {
+      margin-top: 2rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    /* ===== GAME CONTAINER ===== */
+    #game-container {
+      display: none;
+      min-height: 100vh;
+    }
+
+    /* ===== PROGRESS BAR ===== */
+    #progress-bar-wrap {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--border);
+      z-index: 100;
+    }
+
+    #progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    #progress-label {
+      position: fixed;
+      top: 12px;
+      right: 20px;
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      z-index: 100;
+    }
+
+    /* ===== GAME TYPES ===== */
+
+    /* EITHER OR */
+    .round-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 5rem 2rem 3rem;
+      animation: fadeSlide 0.4s ease;
+    }
+
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .round-type-badge {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .question-text {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(1.5rem, 4vw, 2.5rem);
+      text-align: center;
+      max-width: 640px;
+      line-height: 1.3;
+      margin-bottom: 3rem;
+      color: var(--ink);
+    }
+
+    /* Either/Or Split */
+    .split-options {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0;
+      max-width: 700px;
+      width: 100%;
+      align-items: stretch;
+    }
+
+    .split-opt {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 2.5rem 2rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .split-opt:first-child {
+      border-right: none;
+    }
+
+    .split-opt:last-child {
+      border-left: none;
+    }
+
+    .split-opt:hover {
+      background: var(--ink);
+      color: var(--paper);
+      z-index: 2;
+    }
+
+    .split-opt .opt-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .split-opt .opt-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .split-opt:hover .opt-sub {
+      color: var(--border);
+    }
+
+    .or-divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 1.1rem;
+      border: 1px solid var(--border);
+    }
+
+    /* RANKING */
+    .rank-items {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 480px;
+      width: 100%;
+      user-select: none;
+    }
+
+    .rank-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      padding: 1rem 1.25rem;
+      transition: background 0.2s, transform 0.15s;
+      position: relative;
+      touch-action: manipulation;
+    }
+
+    .rank-item:last-child {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rank-item.moving {
+      background: var(--cream);
+      transform: scale(1.02);
+      z-index: 2;
+    }
+
+    .rank-arrows {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-left: auto;
+    }
+
+    .rank-arrow {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 28px;
+      height: 24px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.1s, color 0.1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .rank-arrow:active {
+      background: var(--ink);
+      color: var(--paper);
+      border-color: var(--ink);
+    }
+
+    .rank-num {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--accent);
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .rank-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      flex: 1;
+    }
+
+    .rank-handle {
+      display: none;
+    }
+
+    /* SCENARIO */
+    .scenario-box {
+      max-width: 560px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .scenario-box::before {
+      content: '"';
+      font-family: 'Instrument Serif', serif;
+      font-size: 4rem;
+      color: var(--border);
+      position: absolute;
+      top: -1rem;
+      left: 1.5rem;
+      line-height: 1;
+    }
+
+    .scenario-text {
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--ink);
+    }
+
+    .scenario-choices {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      max-width: 560px;
+      width: 100%;
+    }
+
+    .scenario-choice {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      padding: 1rem 1.5rem;
+      cursor: pointer;
+      text-align: left;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--ink);
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .scenario-choice:first-of-type {
+      border-top: 1px solid var(--border);
+    }
+
+    .scenario-choice:hover {
+      background: var(--ink);
+      color: var(--paper);
+    }
+
+    .choice-letter {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      color: var(--accent);
+      min-width: 20px;
+    }
+
+    .scenario-choice:hover .choice-letter {
+      color: var(--cream);
+    }
+
+    /* OPEN ENDED */
+    .open-input {
+      max-width: 560px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .open-input textarea {
+      width: 100%;
+      height: 140px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 1.25rem;
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: var(--ink);
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .open-input textarea:focus {
+      border-color: var(--ink);
+    }
+
+    .open-input textarea::placeholder {
+      color: var(--muted);
+    }
+
+    .open-submit {
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      padding: 14px 2rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s;
+      text-align: right;
+    }
+
+    .open-submit:hover {
+      background: var(--accent);
+    }
+
+    /* ===== RESULTS ===== */
+    #results {
+      display: none;
+      min-height: 100vh;
+      padding: 5rem 2rem 3rem;
+      max-width: 760px;
+      margin: 0 auto;
+      animation: fadeSlide 0.5s ease;
+    }
+
+    .result-header {
+      border-bottom: 2px solid var(--ink);
+      padding-bottom: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .result-header .eyebrow {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .result-header h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      margin-bottom: 3rem;
+    }
+
+    .profile-cell {
+      background: var(--card-bg);
+      padding: 1.5rem;
+    }
+
+    .profile-cell .label {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .profile-cell .value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.1rem;
+      color: var(--ink);
+    }
+
+    .profile-cell .value.accent {
+      color: var(--accent);
+    }
+
+    .answers-section h3 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .answer-row {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+
+    .answer-q {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .answer-a {
+      font-family: 'Instrument Serif', serif;
+      font-size: 0.95rem;
+      color: var(--ink);
+      line-height: 1.5;
+    }
+
+    .restart-btn {
+      margin-top: 3rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 12px 2rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .restart-btn:hover {
+      border-color: var(--ink);
+      color: var(--ink);
+    }
+
+    /* CONTINUE BTN */
+    .continue-btn {
+      margin-top: 2.5rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      transition: color 0.15s;
+      padding: 0;
+    }
+
+    .continue-btn:hover {
+      color: var(--ink);
+    }
+
+    .continue-btn::after {
+      content: '→';
+      font-size: 1rem;
+    }
+
+    /* Ranking confirm */
+    .rank-confirm-btn {
+      margin-top: 1.5rem;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      background: var(--ink);
+      color: var(--paper);
+      border: none;
+      padding: 12px 2rem;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .rank-confirm-btn:hover {
+      background: var(--accent2);
+    }
+
+    /* Vibe meter */
+    .vibe-meters {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 3rem;
+    }
+
+    .meter-row {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .meter-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      min-width: 120px;
+    }
+
+    .meter-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .meter-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 1s ease 0.5s;
+    }
+
+    .meter-val {
+      font-size: 0.7rem;
+      color: var(--muted);
+      min-width: 30px;
+      text-align: right;
+    }
+
+    @media (max-width: 600px) {
+      .split-options {
+        grid-template-columns: 1fr;
+      }
+
+      .or-divider {
+        width: 100%;
+        height: 40px;
+      }
+
+      .split-opt:first-child {
+        border-right: 1px solid var(--border);
+        border-bottom: none;
+      }
+
+      .split-opt:last-child {
+        border-left: 1px solid var(--border);
+        border-top: none;
+      }
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .answer-row {
+        grid-template-columns: 1fr;
+      }
+
+      .corner-decor {
+        display: none;
+      }
+
+      .round-wrap {
+        padding: 5rem 1.25rem 2rem;
+      }
+
+      .question-text {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
+      }
+
+      .split-opt {
+        padding: 2rem 1.25rem;
+      }
+
+      .scenario-box {
+        padding: 1.5rem 1.25rem;
+      }
+
+      .scenario-choice {
+        padding: 1rem;
+      }
+
+      h1.title {
+        font-size: clamp(2.5rem, 14vw, 5rem);
+      }
+
+      .rank-items {
+        max-width: 100%;
+      }
+
+      .open-input textarea {
+        font-size: 1rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
-<!-- LANDING -->
-<div id="landing">
-  <div class="corner-decor tl">EST. 2024<br>v1.0</div>
-  <div class="corner-decor tr">10 questions<br>~4 min</div>
-  <div class="corner-decor bl">no wrong answers<br>(well, maybe some)</div>
-  <div class="corner-decor br">results saved<br>locally</div>
+  <!-- LANDING -->
+  <div id="landing">
+    <div class="corner-decor tl">EST. 2024<br>v1.0</div>
+    <div class="corner-decor tr">10 questions<br>~4 min</div>
+    <div class="corner-decor bl">no wrong answers<br>(well, maybe some)</div>
+    <div class="corner-decor br">results saved<br>locally</div>
 
-  <div class="badge">The Vibe Check</div>
-  <h1 class="title">
-    Who are<br>
-    <span class="italic-line">you, actually?</span>
-  </h1>
-  <p class="subtitle">
-    Ten questions. No personality type™. No zodiac alignment. Just honest answers to weird questions — and what they say about you.
-  </p>
-  <button class="start-btn" onclick="startGame()">Start the Check</button>
-  <p class="score-line">Drag · Click · Type · Rank</p>
-</div>
-
-<!-- GAME -->
-<div id="game-container">
-  <div id="progress-bar-wrap"><div id="progress-bar-fill"></div></div>
-  <div id="progress-label">1 / 10</div>
-  <div id="round-display"></div>
-</div>
-
-<!-- CANDY SCREEN (shown to her when done) -->
-<div id="candy-screen" style="display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:3rem 2rem; text-align:center;">
-  <div class="badge" style="margin-bottom:2.5rem;">All Done</div>
-  <div style="font-size:4rem; margin-bottom:1.5rem; letter-spacing:0.1em;">🍬</div>
-  <h2 style="font-family:'Syne',sans-serif; font-size:clamp(2rem,6vw,3.5rem); font-weight:800; line-height:1; margin-bottom:1.5rem;">You earned a candy.</h2>
-  <p style="font-family:'Instrument Serif',serif; font-style:italic; font-size:1.15rem; color:var(--muted); max-width:360px; line-height:1.7; margin-bottom:3rem;">
-    Ten questions. Zero wrong answers. Genuinely impressive follow-through — go collect your reward.
-  </p>
-  <div style="border:1px solid var(--border); padding:1.5rem 2rem; max-width:340px; width:100%; background:var(--card-bg);">
-    <p style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">Your results are</p>
-    <p style="font-family:'Syne',sans-serif; font-weight:700; font-size:1.1rem;">Classified. Not for you.</p>
+    <div class="badge">The Vibe Check</div>
+    <h1 class="title">
+      Hi Ana, <br>
+      Who are<br>
+      <span class="italic-line">you, actually?</span>
+    </h1>
+    <p class="subtitle">
+      Ten questions. No personality type™. No zodiac alignment. Just honest answers to weird questions — and what they say about you.
+    </p>
+    <button class="start-btn" onclick="startGame()">Start the Check</button>
+    <p class="score-line">Drag · Click · Type · Rank</p>
   </div>
-  <p style="margin-top:3rem; font-size:0.65rem; color:var(--border); letter-spacing:0.1em;">go hand the phone back now</p>
-</div>
 
-<!-- RESULTS (shown to you — loaded via URL hash) -->
-<div id="results" style="display:none;">
-  <div style="max-width:760px; margin:0 auto; padding:5rem 2rem 3rem;">
-    <div class="result-header">
-      <p class="eyebrow">Her Vibe Check — Full Report</p>
-      <h2 id="result-title">Loading...</h2>
+  <!-- GAME -->
+  <div id="game-container">
+    <div id="progress-bar-wrap">
+      <div id="progress-bar-fill"></div>
     </div>
-    <div class="vibe-meters" id="vibe-meters"></div>
-    <div class="profile-grid" id="profile-grid"></div>
-    <div class="answers-section">
-      <h3>The Full Record</h3>
-      <div id="answers-list"></div>
-    </div>
-    <button class="restart-btn" onclick="restartGame()">Send Again</button>
+    <div id="progress-label">1 / 10</div>
+    <div id="round-display"></div>
   </div>
-</div>
 
-<script>
-const questions = [
-  {
-    type: 'either-or',
-    id: 'q1',
-    label: 'Round 1 — Either / Or',
-    question: 'You have the whole day. No obligations. What pulls you?',
-    options: [
-      { label: 'Out', sub: 'moving, exploring, being somewhere', value: 'extrovert' },
-      { label: 'In', sub: 'stillness, comfort, your own space', value: 'introvert' }
-    ]
-  },
-  {
-    type: 'either-or',
-    id: 'q2',
-    label: 'Round 2 — Either / Or',
-    question: 'Which would ruin your week more?',
-    options: [
-      { label: 'Being lied to', sub: 'deception, omission, spin', value: 'truth-first' },
-      { label: 'Being embarrassed', sub: 'in public, by someone you trusted', value: 'pride-first' }
-    ]
-  },
-  {
-    type: 'ranking',
-    id: 'q3',
-    label: 'Round 3 — Rank It',
-    question: 'Rank these from most to least important to you in a person.',
-    items: ['Sense of humor', 'Ambition', 'Curiosity', 'Reliability', 'Taste']
-  },
-  {
-    type: 'scenario',
-    id: 'q4',
-    label: 'Round 4 — Scenario',
-    question: 'What do you actually do?',
-    scenario: 'You\'re at dinner with a group. Someone says something factually wrong — confidently. Everyone else nods along.',
-    choices: [
-      { letter: 'A', text: 'Correct them directly. Facts are facts.', value: 'direct' },
-      { letter: 'B', text: 'Let it slide. Not worth the friction.', value: 'peacekeeping' },
-      { letter: 'C', text: 'Drop a casual "hm, I thought it was..." and see what happens.', value: 'subtle' },
-      { letter: 'D', text: 'Google it under the table and say nothing.', value: 'observer' }
-    ]
-  },
-  {
-    type: 'either-or',
-    id: 'q5',
-    label: 'Round 5 — Either / Or',
-    question: 'You discover your favorite artist made their best work while going through something terrible. Does it change how you feel about the work?',
-    options: [
-      { label: 'No', sub: 'the work is the work, separate from the person', value: 'formalist' },
-      { label: 'Yes', sub: 'context is everything, I can\'t unknow it', value: 'contextualist' }
-    ]
-  },
-  {
-    type: 'ranking',
-    id: 'q6',
-    label: 'Round 6 — Rank It',
-    question: 'Rank these conversation types from most to least enjoyable.',
-    items: ['Late-night philosophical', 'Stupid and chaotic', 'Specific and nerdy', 'Emotional and real', 'Light and witty']
-  },
-  {
-    type: 'scenario',
-    id: 'q7',
-    label: 'Round 7 — Scenario',
-    question: 'You pick...',
-    scenario: 'You have to pick one superpower, but it only works on Tuesdays.',
-    choices: [
-      { letter: 'A', text: 'Read minds. Tuesdays are enough.', value: 'strategic' },
-      { letter: 'B', text: 'Fly. Just for the view.', value: 'romantic' },
-      { letter: 'C', text: 'Stop time. So I can sleep more.', value: 'practical' },
-      { letter: 'D', text: 'I\'d use the other six days to avoid the responsibility.', value: 'chaotic' }
-    ]
-  },
-  {
-    type: 'either-or',
-    id: 'q8',
-    label: 'Round 8 — Either / Or',
-    question: 'Which sounds more like you at 2am?',
-    options: [
-      { label: 'Asleep', sub: 'you have a schedule and you keep it', value: 'structured' },
-      { label: 'Awake', sub: 'thinking about something you can\'t quite place', value: 'chaotic-good' }
-    ]
-  },
-  {
-    type: 'open',
-    id: 'q9',
-    label: 'Round 9 — Open',
-    question: 'What\'s something you\'re genuinely good at that almost nobody knows about?',
-    placeholder: 'Be honest. This is a judgment-free zone.'
-  },
-  {
-    type: 'open',
-    id: 'q10',
-    label: 'Round 10 — Final',
-    question: 'What do you want more of this year? Not what you think you should want. What you actually want.',
-    placeholder: 'Take your time with this one.'
-  }
-];
+  <!-- CANDY SCREEN (shown to her when done) -->
+  <div id="candy-screen" style="display:none; min-height:100vh; flex-direction:column; align-items:center; justify-content:center; padding:3rem 2rem; text-align:center;">
+    <div class="badge" style="margin-bottom:2.5rem;">All Done</div>
+    <div style="font-size:4rem; margin-bottom:1.5rem; letter-spacing:0.1em;">🍬</div>
+    <h2 style="font-family:'Syne',sans-serif; font-size:clamp(2rem,6vw,3.5rem); font-weight:800; line-height:1; margin-bottom:1.5rem;">You earned a candy.</h2>
+    <p style="font-family:'Instrument Serif',serif; font-style:italic; font-size:1.15rem; color:var(--muted); max-width:360px; line-height:1.7; margin-bottom:3rem;">
+      Ten questions. Zero wrong answers. Genuinely impressive follow-through — go collect your reward.
+    </p>
+    <div style="border:1px solid var(--border); padding:1.5rem 2rem; max-width:340px; width:100%; background:var(--card-bg);">
+      <p style="font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--muted); margin-bottom:0.5rem;">Your results are</p>
+      <p style="font-family:'Syne',sans-serif; font-weight:700; font-size:1.1rem;">Classified. Not for you.</p>
+    </div>
+    <p style="margin-top:3rem; font-size:0.65rem; color:var(--border); letter-spacing:0.1em;">go hand the phone back now</p>
+  </div>
 
-let currentQ = 0;
-let answers = {};
+  <!-- RESULTS (shown to you — loaded via URL hash) -->
+  <div id="results" style="display:none;">
+    <div style="max-width:760px; margin:0 auto; padding:5rem 2rem 3rem;">
+      <div class="result-header">
+        <p class="eyebrow">Her Vibe Check — Full Report</p>
+        <h2 id="result-title">Loading...</h2>
+      </div>
+      <div class="vibe-meters" id="vibe-meters"></div>
+      <div class="profile-grid" id="profile-grid"></div>
+      <div class="answers-section">
+        <h3>The Full Record</h3>
+        <div id="answers-list"></div>
+      </div>
+      <button class="restart-btn" onclick="restartGame()">Send Again</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [{
+        type: 'either-or',
+        id: 'q1',
+        label: 'Round 1 — Either / Or',
+        question: 'You have the whole day. No obligations. What pulls you?',
+        options: [{
+            label: 'Out',
+            sub: 'moving, exploring, being somewhere',
+            value: 'extrovert'
+          },
+          {
+            label: 'In',
+            sub: 'stillness, comfort, your own space',
+            value: 'introvert'
+          }
+        ]
+      },
+      {
+        type: 'either-or',
+        id: 'q2',
+        label: 'Round 2 — Either / Or',
+        question: 'Which would ruin your week more?',
+        options: [{
+            label: 'Being lied to',
+            sub: 'deception, omission, spin',
+            value: 'truth-first'
+          },
+          {
+            label: 'Being embarrassed',
+            sub: 'in public, by someone you trusted',
+            value: 'pride-first'
+          }
+        ]
+      },
+      {
+        type: 'ranking',
+        id: 'q3',
+        label: 'Round 3 — Rank It',
+        question: 'Rank these from most to least important to you in a person.',
+        items: ['Sense of humor', 'Ambition', 'Curiosity', 'Reliability', 'Taste']
+      },
+      {
+        type: 'scenario',
+        id: 'q4',
+        label: 'Round 4 — Scenario',
+        question: 'What do you actually do?',
+        scenario: 'You\'re at dinner with a group. Someone says something factually wrong — confidently. Everyone else nods along.',
+        choices: [{
+            letter: 'A',
+            text: 'Correct them directly. Facts are facts.',
+            value: 'direct'
+          },
+          {
+            letter: 'B',
+            text: 'Let it slide. Not worth the friction.',
+            value: 'peacekeeping'
+          },
+          {
+            letter: 'C',
+            text: 'Drop a casual "hm, I thought it was..." and see what happens.',
+            value: 'subtle'
+          },
+          {
+            letter: 'D',
+            text: 'Google it under the table and say nothing.',
+            value: 'observer'
+          }
+        ]
+      },
+      {
+        type: 'either-or',
+        id: 'q5',
+        label: 'Round 5 — Either / Or',
+        question: 'You discover your favorite artist made their best work while going through something terrible. Does it change how you feel about the work?',
+        options: [{
+            label: 'No',
+            sub: 'the work is the work, separate from the person',
+            value: 'formalist'
+          },
+          {
+            label: 'Yes',
+            sub: 'context is everything, I can\'t unknow it',
+            value: 'contextualist'
+          }
+        ]
+      },
+      {
+        type: 'ranking',
+        id: 'q6',
+        label: 'Round 6 — Rank It',
+        question: 'Rank these conversation types from most to least enjoyable.',
+        items: ['Late-night philosophical', 'Stupid and chaotic', 'Specific and nerdy', 'Emotional and real', 'Light and witty']
+      },
+      {
+        type: 'scenario',
+        id: 'q7',
+        label: 'Round 7 — Scenario',
+        question: 'You pick...',
+        scenario: 'You have to pick one superpower, but it only works on Tuesdays.',
+        choices: [{
+            letter: 'A',
+            text: 'Read minds. Tuesdays are enough.',
+            value: 'strategic'
+          },
+          {
+            letter: 'B',
+            text: 'Fly. Just for the view.',
+            value: 'romantic'
+          },
+          {
+            letter: 'C',
+            text: 'Stop time. So I can sleep more.',
+            value: 'practical'
+          },
+          {
+            letter: 'D',
+            text: 'I\'d use the other six days to avoid the responsibility.',
+            value: 'chaotic'
+          }
+        ]
+      },
+      {
+        type: 'either-or',
+        id: 'q8',
+        label: 'Round 8 — Either / Or',
+        question: 'Which sounds more like you at 2am?',
+        options: [{
+            label: 'Asleep',
+            sub: 'you have a schedule and you keep it',
+            value: 'structured'
+          },
+          {
+            label: 'Awake',
+            sub: 'thinking about something you can\'t quite place',
+            value: 'chaotic-good'
+          }
+        ]
+      },
+      {
+        type: 'open',
+        id: 'q9',
+        label: 'Round 9 — Open',
+        question: 'What\'s something you\'re genuinely good at that almost nobody knows about?',
+        placeholder: 'Be honest. This is a judgment-free zone.'
+      },
+      {
+        type: 'open',
+        id: 'q10',
+        label: 'Round 10 — Final',
+        question: 'What do you want more of this year? Not what you think you should want. What you actually want.',
+        placeholder: 'Take your time with this one.'
+      }
+    ];
+
+    let currentQ = 0;
+    let answers = {};
 
 
-function startGame() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('game-container').style.display = 'block';
-  renderQuestion();
-}
+    function startGame() {
+      document.getElementById('landing').style.display = 'none';
+      document.getElementById('game-container').style.display = 'block';
+      renderQuestion();
+    }
 
-function renderQuestion() {
-  const q = questions[currentQ];
-  const pct = ((currentQ) / questions.length) * 100;
-  document.getElementById('progress-bar-fill').style.width = pct + '%';
-  document.getElementById('progress-label').textContent = (currentQ + 1) + ' / ' + questions.length;
+    function renderQuestion() {
+      const q = questions[currentQ];
+      const pct = ((currentQ) / questions.length) * 100;
+      document.getElementById('progress-bar-fill').style.width = pct + '%';
+      document.getElementById('progress-label').textContent = (currentQ + 1) + ' / ' + questions.length;
 
-  const container = document.getElementById('round-display');
-  let html = '';
+      const container = document.getElementById('round-display');
+      let html = '';
 
-  if (q.type === 'either-or') {
-    html = `
+      if (q.type === 'either-or') {
+        html = `
       <div class="round-wrap">
         <div class="round-type-badge">${q.label}</div>
         <p class="question-text">${q.question}</p>
@@ -858,8 +1052,8 @@ function renderQuestion() {
         </div>
       </div>
     `;
-  } else if (q.type === 'ranking') {
-    const itemsHTML = q.items.map((item, i) => `
+      } else if (q.type === 'ranking') {
+        const itemsHTML = q.items.map((item, i) => `
       <div class="rank-item" data-index="${i}">
         <span class="rank-num">${i+1}</span>
         <span class="rank-name">${item}</span>
@@ -869,7 +1063,7 @@ function renderQuestion() {
         </div>
       </div>
     `).join('');
-    html = `
+        html = `
       <div class="round-wrap">
         <div class="round-type-badge">${q.label}</div>
         <p class="question-text">${q.question}</p>
@@ -877,14 +1071,14 @@ function renderQuestion() {
         <button class="rank-confirm-btn" onclick="confirmRanking('${q.id}')">Lock In Ranking →</button>
       </div>
     `;
-  } else if (q.type === 'scenario') {
-    const choicesHTML = q.choices.map(c => `
+      } else if (q.type === 'scenario') {
+        const choicesHTML = q.choices.map(c => `
       <button class="scenario-choice" onclick="recordAndAdvance('${q.id}', '${c.value}', '${c.letter}: ${c.text.replace(/'/g, "\\'")}')">
         <span class="choice-letter">${c.letter}</span>
         <span>${c.text}</span>
       </button>
     `).join('');
-    html = `
+        html = `
       <div class="round-wrap">
         <div class="round-type-badge">${q.label}</div>
         <p class="question-text">${q.question}</p>
@@ -894,8 +1088,8 @@ function renderQuestion() {
         <div class="scenario-choices">${choicesHTML}</div>
       </div>
     `;
-  } else if (q.type === 'open') {
-    html = `
+      } else if (q.type === 'open') {
+        html = `
       <div class="round-wrap">
         <div class="round-type-badge">${q.label}</div>
         <p class="question-text">${q.question}</p>
@@ -905,129 +1099,154 @@ function renderQuestion() {
         </div>
       </div>
     `;
-  }
+      }
 
-  container.innerHTML = html;
+      container.innerHTML = html;
 
-  // no drag init needed — using arrow buttons
-}
-
-function moveRankItem(btn, direction) {
-  const item = btn.closest('.rank-item');
-  const list = item.parentElement;
-  const items = [...list.querySelectorAll('.rank-item')];
-  const idx = items.indexOf(item);
-  const targetIdx = idx + direction;
-  if (targetIdx < 0 || targetIdx >= items.length) return;
-  item.classList.add('moving');
-  setTimeout(() => item.classList.remove('moving'), 200);
-  if (direction === -1) {
-    list.insertBefore(item, items[targetIdx]);
-  } else {
-    list.insertBefore(item, items[targetIdx].nextSibling);
-  }
-  updateRankNumbers(list);
-}
-
-function updateRankNumbers(list) {
-  list.querySelectorAll('.rank-item').forEach((item, i) => {
-    item.querySelector('.rank-num').textContent = i + 1;
-  });
-}
-
-function confirmRanking(qid) {
-  const list = document.getElementById('rank-list-' + qid);
-  const names = [...list.querySelectorAll('.rank-name')].map(n => n.textContent);
-  answers[qid] = { value: 'ranked', display: names.join(' → ') };
-  advance();
-}
-
-function recordAndAdvance(qid, value, display) {
-  answers[qid] = { value, display };
-  advance();
-}
-
-function submitOpen(qid) {
-  const ta = document.getElementById('open-' + qid);
-  const txt = ta.value.trim();
-  if (!txt) { ta.style.borderColor = '#c84b2f'; return; }
-  answers[qid] = { value: txt, display: txt };
-  advance();
-}
-
-function advance() {
-  currentQ++;
-  if (currentQ >= questions.length) {
-    finishGame();
-  } else {
-    renderQuestion();
-  }
-}
-
-function finishGame() {
-  document.getElementById('game-container').style.display = 'none';
-  document.getElementById('candy-screen').style.display = 'flex';
-
-  const questionLabels = [
-    'Free day instinct',
-    'Would ruin your week',
-    'People you value most (ranked)',
-    'Scenario: wrong at dinner',
-    'Art & difficult context',
-    'Conversations ranked',
-    'Tuesday-only superpower',
-    'At 2am',
-    'Secret skill',
-    'Want more of'
-  ];
-  const qKeys = ['q1','q2','q3','q4','q5','q6','q7','q8','q9','q10'];
-  const body = qKeys.map((k, i) => {
-    const a = answers[k]?.display || '—';
-    return (i + 1) + '. ' + questionLabels[i] + '\n   -> ' + a;
-  }).join('\n\n');
-
-  emailjs.send('service_bv9dfcq', 'template_50oszgc', {
-    message: body
-  }).catch(function(err) { console.warn('EmailJS error:', err); });
-}
-
-function checkForResults() {
-  const hash = window.location.hash;
-  if (hash.startsWith('#results=')) {
-    try {
-      const encoded = hash.replace('#results=', '');
-      answers = JSON.parse(decodeURIComponent(atob(encoded)));
-      document.getElementById('landing').style.display = 'none';
-      document.getElementById('game-container').style.display = 'none';
-      document.getElementById('candy-screen').style.display = 'none';
-      document.getElementById('results').style.display = 'block';
-      renderResultsContent();
-    } catch(e) {
-      // bad hash, just show landing
+      // no drag init needed — using arrow buttons
     }
-  }
-}
 
-function renderResultsContent() {
-  const isOut = answers.q1?.value === 'extrovert';
-  const isTruth = answers.q2?.value === 'truth-first';
-  const isUp = answers.q8?.value === 'chaotic-good';
+    function moveRankItem(btn, direction) {
+      const item = btn.closest('.rank-item');
+      const list = item.parentElement;
+      const items = [...list.querySelectorAll('.rank-item')];
+      const idx = items.indexOf(item);
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= items.length) return;
+      item.classList.add('moving');
+      setTimeout(() => item.classList.remove('moving'), 200);
+      if (direction === -1) {
+        list.insertBefore(item, items[targetIdx]);
+      } else {
+        list.insertBefore(item, items[targetIdx].nextSibling);
+      }
+      updateRankNumbers(list);
+    }
 
-  const archetype = isOut && isTruth ? 'The Direct One' :
-                    isOut && !isTruth ? 'The Social Strategist' :
-                    !isOut && isTruth ? 'The Quiet Honest' :
-                    'The Careful Observer';
+    function updateRankNumbers(list) {
+      list.querySelectorAll('.rank-item').forEach((item, i) => {
+        item.querySelector('.rank-num').textContent = i + 1;
+      });
+    }
 
-  document.getElementById('result-title').textContent = archetype;
+    function confirmRanking(qid) {
+      const list = document.getElementById('rank-list-' + qid);
+      const names = [...list.querySelectorAll('.rank-name')].map(n => n.textContent);
+      answers[qid] = {
+        value: 'ranked',
+        display: names.join(' → ')
+      };
+      advance();
+    }
 
-  const vibes = [
-    { label: 'Directness', score: isTruth ? 82 : 38 },
-    { label: 'Chaos Tolerance', score: isUp ? 75 : 40 },
-    { label: 'Social Energy', score: isOut ? 78 : 35 },
-    { label: 'Introspection', score: isUp ? 80 : 55 },
-  ];
+    function recordAndAdvance(qid, value, display) {
+      answers[qid] = {
+        value,
+        display
+      };
+      advance();
+    }
 
-  document.getElementById('vibe-meters').innerHTML = vibes.map(v => `
+    function submitOpen(qid) {
+      const ta = document.getElementById('open-' + qid);
+      const txt = ta.value.trim();
+      if (!txt) {
+        ta.style.borderColor = '#c84b2f';
+        return;
+      }
+      answers[qid] = {
+        value: txt,
+        display: txt
+      };
+      advance();
+    }
+
+    function advance() {
+      currentQ++;
+      if (currentQ >= questions.length) {
+        finishGame();
+      } else {
+        renderQuestion();
+      }
+    }
+
+    function finishGame() {
+      document.getElementById('game-container').style.display = 'none';
+      document.getElementById('candy-screen').style.display = 'flex';
+
+      const questionLabels = [
+        'Free day instinct',
+        'Would ruin your week',
+        'People you value most (ranked)',
+        'Scenario: wrong at dinner',
+        'Art & difficult context',
+        'Conversations ranked',
+        'Tuesday-only superpower',
+        'At 2am',
+        'Secret skill',
+        'Want more of'
+      ];
+      const qKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10'];
+      const body = qKeys.map((k, i) => {
+        const a = answers[k]?.display || '—';
+        return (i + 1) + '. ' + questionLabels[i] + '\n   -> ' + a;
+      }).join('\n\n');
+
+      emailjs.send('service_bv9dfcq', 'template_50oszgc', {
+        message: body
+      }).catch(function(err) {
+        console.warn('EmailJS error:', err);
+      });
+    }
+
+    function checkForResults() {
+      const hash = window.location.hash;
+      if (hash.startsWith('#results=')) {
+        try {
+          const encoded = hash.replace('#results=', '');
+          answers = JSON.parse(decodeURIComponent(atob(encoded)));
+          document.getElementById('landing').style.display = 'none';
+          document.getElementById('game-container').style.display = 'none';
+          document.getElementById('candy-screen').style.display = 'none';
+          document.getElementById('results').style.display = 'block';
+          renderResultsContent();
+        } catch (e) {
+          // bad hash, just show landing
+        }
+      }
+    }
+
+    function renderResultsContent() {
+      const isOut = answers.q1?.value === 'extrovert';
+      const isTruth = answers.q2?.value === 'truth-first';
+      const isUp = answers.q8?.value === 'chaotic-good';
+
+      const archetype = isOut && isTruth ? 'The Direct One' :
+        isOut && !isTruth ? 'The Social Strategist' :
+        !isOut && isTruth ? 'The Quiet Honest' :
+        'The Careful Observer';
+
+      document.getElementById('result-title').textContent = archetype;
+
+      const vibes = [{
+          label: 'Directness',
+          score: isTruth ? 82 : 38
+        },
+        {
+          label: 'Chaos Tolerance',
+          score: isUp ? 75 : 40
+        },
+        {
+          label: 'Social Energy',
+          score: isOut ? 78 : 35
+        },
+        {
+          label: 'Introspection',
+          score: isUp ? 80 : 55
+        },
+      ];
+
+      document.getElementById('vibe-meters').innerHTML = vibes.map(v => `
     <div class="meter-row">
       <span class="meter-label">${v.label}</span>
       <div class="meter-bar"><div class="meter-fill" style="width: 0%" data-target="${v.score}"></div></div>
@@ -1035,58 +1254,80 @@ function renderResultsContent() {
     </div>
   `).join('');
 
-  setTimeout(() => {
-    document.querySelectorAll('.meter-fill').forEach(bar => {
-      bar.style.width = bar.dataset.target + '%';
-    });
-  }, 300);
+      setTimeout(() => {
+        document.querySelectorAll('.meter-fill').forEach(bar => {
+          bar.style.width = bar.dataset.target + '%';
+        });
+      }, 300);
 
-  const scenarioMap = { direct: 'Calls it out', peacekeeping: 'Lets it slide', subtle: 'Goes indirect', observer: 'Watches quietly' };
-  const superMap = { strategic: 'Mind reader', romantic: 'Flies for the view', practical: 'Stops time', chaotic: 'Avoids it entirely' };
-  const profileData = [
-    { label: 'Energy Style', value: answers.q1?.display || '—' },
-    { label: 'When Someone\'s Wrong', value: scenarioMap[answers.q4?.value] || '—' },
-    { label: 'Superpower Choice', value: superMap[answers.q7?.value] || '—' },
-    { label: 'On Art & Context', value: answers.q5?.value === 'formalist' ? 'Separates work from person' : 'Can\'t unknow the context' },
-  ];
+      const scenarioMap = {
+        direct: 'Calls it out',
+        peacekeeping: 'Lets it slide',
+        subtle: 'Goes indirect',
+        observer: 'Watches quietly'
+      };
+      const superMap = {
+        strategic: 'Mind reader',
+        romantic: 'Flies for the view',
+        practical: 'Stops time',
+        chaotic: 'Avoids it entirely'
+      };
+      const profileData = [{
+          label: 'Energy Style',
+          value: answers.q1?.display || '—'
+        },
+        {
+          label: 'When Someone\'s Wrong',
+          value: scenarioMap[answers.q4?.value] || '—'
+        },
+        {
+          label: 'Superpower Choice',
+          value: superMap[answers.q7?.value] || '—'
+        },
+        {
+          label: 'On Art & Context',
+          value: answers.q5?.value === 'formalist' ? 'Separates work from person' : 'Can\'t unknow the context'
+        },
+      ];
 
-  document.getElementById('profile-grid').innerHTML = profileData.map(p => `
+      document.getElementById('profile-grid').innerHTML = profileData.map(p => `
     <div class="profile-cell">
       <p class="label">${p.label}</p>
       <p class="value">${p.value}</p>
     </div>
   `).join('');
 
-  const answerPairs = [
-    ['Free day instinct', answers.q1?.display],
-    ['Would ruin your week', answers.q2?.display],
-    ['People you value most (ranked)', answers.q3?.display],
-    ['Someone\'s wrong at dinner', answers.q4?.display],
-    ['Art & difficult context', answers.q5?.display],
-    ['Conversations ranked', answers.q6?.display],
-    ['Tuesday-only superpower', answers.q7?.display],
-    ['At 2am you\'re', answers.q8?.display],
-    ['Secret skill', answers.q9?.display],
-    ['Want more of', answers.q10?.display],
-  ];
+      const answerPairs = [
+        ['Free day instinct', answers.q1?.display],
+        ['Would ruin your week', answers.q2?.display],
+        ['People you value most (ranked)', answers.q3?.display],
+        ['Someone\'s wrong at dinner', answers.q4?.display],
+        ['Art & difficult context', answers.q5?.display],
+        ['Conversations ranked', answers.q6?.display],
+        ['Tuesday-only superpower', answers.q7?.display],
+        ['At 2am you\'re', answers.q8?.display],
+        ['Secret skill', answers.q9?.display],
+        ['Want more of', answers.q10?.display],
+      ];
 
-  document.getElementById('answers-list').innerHTML = answerPairs.map(([q, a]) => `
+      document.getElementById('answers-list').innerHTML = answerPairs.map(([q, a]) => `
     <div class="answer-row">
       <span class="answer-q">${q}</span>
       <span class="answer-a">${a || '—'}</span>
     </div>
   `).join('');
-}
+    }
 
-function restartGame() {
-  currentQ = 0;
-  answers = {};
-  window.location.hash = '';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('landing').style.display = 'flex';
-}
-// On load — check if we're viewing results
-window.addEventListener('DOMContentLoaded', checkForResults);
-</script>
+    function restartGame() {
+      currentQ = 0;
+      answers = {};
+      window.location.hash = '';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('landing').style.display = 'flex';
+    }
+    // On load — check if we're viewing results
+    window.addEventListener('DOMContentLoaded', checkForResults);
+  </script>
 </body>
+
 </html>
